@@ -28,16 +28,23 @@ prediction_history: List[Dict] = []
 
 def load_model():
     global model, class_names
-    print("Loading MobileNetV2 model...")
-    weights = models.MobileNet_V2_Weights.IMAGENET1K_V1
-    model = models.mobilenet_v2(weights=weights)
+    print("Loading MobileNetV3-Small model (optimized)...")
+    weights = models.MobileNet_V3_Small_Weights.IMAGENET1K_V1
+    model = models.mobilenet_v3_small(weights=weights)
     model.eval()
+    
+    model = torch.quantization.quantize_dynamic(
+        model, {torch.nn.Linear}, dtype=torch.qint8
+    )
+    
+    model = torch.jit.script(model)
+    
     class_names = {str(i): cat for i, cat in enumerate(weights.meta['categories'])}
     print(f"Model loaded! Classes: {len(class_names)}")
 
 transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
+    transforms.Resize(168),
+    transforms.CenterCrop(160),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
